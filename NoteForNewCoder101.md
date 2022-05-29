@@ -949,3 +949,365 @@ public:
 ```
 
 ### BM30 二叉搜索树与双向链表
+
+&emsp;&emsp;本题目采用双向深度优先检索方案进行双向链表构建,其dfs的基本题解思路与二叉树的深度优先检索策略中，前序遍历过程基本类似，即先下到树的最左边，再采用左中右的方案进行访问即可。在代码的实现过程中，需要定义个返回头结点，作为最后返回的头部。其具体串联过程是记录上一个当前链表末尾结点，即代码中的cur结点的prev结点，与cur进行连接，再往后挪动即可。
+
+* 1 定义全局变量prev结点和记录返回头的head结点；
+* 2 定义dfs func(),并且dfs(cur->left),直到为空，处理cur节点的方案为使得一开始的cur结点为head(此时prev为空),此时cur左半连接空的prev,后prev挪动至cur结点，此后prev不再空，使prev->right = cur;操作之后dfs(cur->right);
+
+以下仅给出dfs func():
+
+```c++
+ListNode* prev = nullptr;
+ListNode* head = nullptr;
+
+void dfs(TreeNode* cur){
+    if(!cur){ return; }
+
+    dfs(cur->left);
+
+    if(!prev){
+        head = cur;
+    }else{
+        prev->right = cur;
+    }
+
+    cur->left = prev;
+    prev = cur;
+    dfs(cur->right);
+}
+```
+
+### BM31 对称的二叉树
+
+&emsp;&emsp;对于对称二叉树，判断对称的条件的当树的结构形状相同，以当前结点为对称结点，其对称双方的左子节点等于右子节点，同又左，则此方案可以采用递归完成。为此编写辅助函数 isMirror(args,...);
+
+```c++
+bool isMirror(TreeNode*  t1, TreeNode* t2){
+    if(!t1 && !t2) { return true; } // 结束条件
+    else if(!t1 || !t2) { return false; }
+    if(t1->val == t2->val){
+        return isMirror(t1->left, t2->right) && isMirror(t1->right, t2->left);
+    }
+    return false;
+}
+```
+
+### BM32 合并二叉树
+
+&emsp;&emsp;合并二叉树采用递归方式进行即可，主要得访问顺序为根左右顺序。
+
+```c++
+TreeNode* mergeTrees(TreeNode* t1, TreeNode* t2){
+    if(!t1) {return t2};
+    if(!t2) {return t1};
+    TreeNode* head  = new head(t1->val + t2->val);
+    head->left = mergeTrees(t1->left, t2->left);
+    head->right = mergeTrees(t1->right, t2->right);
+
+    return head;
+}
+```
+
+### BM33 二叉树的镜像
+
+左右子树对换，然后递归当前节点的左子节点和右子节点，最后返回即可
+
+```c++
+TreeNode* Mirror(TreeNode* pRoot){
+    if(!pRoot) return nullptr;
+
+    // 交换过程
+    TreeNode* left = pRoot->left;
+    pRoot->left = pRoot->right;
+    pRoot->right = left;
+
+    // 递归左右子树
+    Mirror(pRoot->left);
+    Mirror(pRoot->right);
+
+    return pRoot;
+}
+```
+
+### BM34 判断是不是二叉搜索树
+
+&emsp;&emsp;判断是不是二叉搜索树的关键是采用中序遍历方案，即左中右顺序遍历，每次遍历过程更新前一个节点pre,使得其与当前结点比较，其方法过程类似变二叉树为双向链表，其访问思路一致，在判断二叉搜索树的过程中要求序列为单增序列。
+
+```c++
+long pre  = LONG_MIN;
+bool isValidBST(TreeNode* root) {
+    // write code here
+    if(!root) return true;
+        
+    if(!isValidBST(root->left)){
+        return false;
+    }
+        
+    if(root->val <= pre){
+        return false;
+    }
+    pre = root->val;
+        
+    if(!isValidBST(root->right)){
+        return false;
+    }
+    return true;
+}
+```
+
+### BM35 判断是不是完全二叉树
+
+&emsp;&emsp;判断完全二叉树的一种方案是使用bfs算法进行广度优先检索，与层次遍历不同的是，在该过程中，我们需要实现对目标结点的左右结点无论为空均压入指定的辅助队列中，并设计一个标志位，该标志位在队列元素为空时候被激活，如果后续还能读到非空元素，则说明非完全二叉树。其具体的步骤如下
+
+* step 1：先判断空树一定是完全二叉树。
+* step 2：初始化一个队列辅助层次遍历，将根节点加入。
+* step 3：逐渐从队列中弹出元素访问节点，如果遇到某个节点为空，进行标记，代表到了完全二叉树的最下层，若是后续还有访问，则说明提前出现了叶子节点，不符合完全二叉树的性质。
+* step 4：否则，继续加入左右子节点进入队列排队，等待访问。
+
+```c++
+/**
+ * struct TreeNode {
+ *	int val;
+ *	struct TreeNode *left;
+ *	struct TreeNode *right;
+ *	TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ * };
+ */
+class Solution {
+public:
+    /**
+     * 代码中的类名、方法名、参数名已经指定，请勿修改，直接返回方法规定的值即可
+     *
+     * 
+     * @param root TreeNode类 
+     * @return bool布尔型
+     */
+    bool isCompleteTree(TreeNode* root) {
+        // write code here
+        if(!root)return true;
+        
+        queue<TreeNode* >helpQ;
+        helpQ.push(root);
+        bool flag = false;
+        while(!helpQ.empty()){
+            TreeNode* node = helpQ.front();
+            helpQ.pop();
+            if(!node){
+                flag = true;
+                continue;
+            }
+            if(flag) return false;
+            
+            helpQ.push(node->left);
+            helpQ.push(node->right);
+        }
+        
+        return true;
+    }
+};
+```
+
+### BM36 判断是不是平衡二叉树
+
+树的深度计算加上子树递归可解决本题目，本质上是dfs的应用
+
+```c++
+class Solution {
+public:
+    bool IsBalanced_Solution(TreeNode* pRoot) {
+        if(!pRoot) return true;
+        if(abs(treeDeep(pRoot->left) - treeDeep(pRoot->right)) > 1) {
+            return false;
+        }
+        return IsBalanced_Solution(pRoot->left) && IsBalanced_Solution(pRoot->right);
+    }
+    
+private:
+    int treeDeep(TreeNode* root){
+        if(!root) return 0;
+        return 1 + max(treeDeep(root->left), treeDeep(root->right));
+    }
+};
+```
+
+### BM37 二叉搜索树的最近公共祖先
+本处寻找的是二叉搜索树的祖先，由此可联想到二叉搜索树的性质，其存在左子树所有值小于根节点小于右侧结点，为此，找公共祖先最好的方案就是递归，其递归停止的条件是p q分列某一个根节点的两侧。然后返回该根节点即可
+
+```c++
+int LCA(TreeNode* root, const int p, const int q){
+    if(root->val > p && root->val > q){
+        return LCA(root->left, p, q);
+    }
+    if(root->val < p && root->val < q){
+        return LCA(root->right, p, q);
+    }
+
+    return root->val;
+}
+```
+
+### BM38 在二叉树中找到两个节点的最近公共祖先
+
+&emsp;&emsp;本题目可采用非递归写法完成,即使用bfs的分层遍历方案完成，要想找到两个节点的最近公共祖先节点，我们可以从两个节点往上找，每个节点都往上走，一直走到根节点，那么根节点到这两个节点的连线肯定有相交的地方，如果是从上往下走，那么最后一次相交的节点就是他们的最近公共祖先节点。
+![二叉树例子](./img/4C76D1E819237AC3400E2F8ECB4F5F33.png)
+我们看到6和7公共祖先有5和3，但最近的是5。我们只要往上找，找到他们第一个相同的公共祖先节点即可，但怎么找到每个节点的父节点呢，我们只需要把每个节点都遍历一遍，然后顺便记录他们的父节点存储在Map中。我们先找到其中的一条路径，比如6→5→3，然后在另一个节点往上找，由于7不在那条路径上，我们找7的父节点是2，2也不在那条路径上，我们接着往上找，2的父节点是5，5在那条路径上，所以5就是他们的最近公共子节点。其实这里我们可以优化一下，我们没必要遍历所有的结点，我们一层一层的遍历（也就是BFS），只需要这两个节点都遍历到就可以了，比如上面2和8的公共结点，我们只需要遍历到第3层，把2和8都遍历到就行了，没必要再遍历第4层了。（BFS就是一层一层的遍历，如下图所示）
+![bfs](./img/179B552605B4302ED05E4758724FD5D7.png)
+
+```c++
+/**
+ * struct TreeNode {
+ *	int val;
+ *	struct TreeNode *left;
+ *	struct TreeNode *right;
+ * };
+ */
+
+class Solution {
+public:
+    /**
+     * 
+     * @param root TreeNode类 
+     * @param o1 int整型 
+     * @param o2 int整型 
+     * @return int整型
+     */
+    int lowestCommonAncestor(TreeNode* root, int o1, int o2) {
+        // write code here
+        if(!root) return -1;
+        
+        unordered_map<int, int> parent;
+        queue<TreeNode*> helpQ;
+        helpQ.push(root);
+        parent[root->val] = INT_MAX;
+        // 遍历二叉树，直到遍历过程已经找到两个节点，并将其父节点存储进字典中
+        while(parent.count(o1) == 0 || parent.count(o2) == 0){
+            TreeNode *node = helpQ.front();
+            helpQ.pop();
+            if(node->left){
+                parent[node->left->val] = node->val;
+                helpQ.push(node->left);
+            }
+            if(node->right){
+                parent[node->right->val] = node->val;
+                helpQ.push(node->right);
+            }
+        }
+        set<int>ancestors;
+        // 记录节点o1及其祖先节点，直到访问到根节点方结束
+        while(parent.count(o1)){
+            ancestors.insert(o1);
+            o1 = parent[o1];
+        }
+        // 查看o1和他的祖先节点是否包含o2节点，如果不包含则看是否包含o2的祖先节点
+        // 找最近的过程由此体现
+        while(ancestors.count(o2) == 0){
+            o2 = parent[o2];
+        }
+        return o2;
+    }
+};
+```
+
+递归过程由一个函数辅助完成
+
+```c++
+/**
+ * struct TreeNode {
+ *	int val;
+ *	struct TreeNode *left;
+ *	struct TreeNode *right;
+ * };
+ */
+
+class Solution {
+public:
+    /**
+     * 
+     * @param root TreeNode类 
+     * @param o1 int整型 
+     * @param o2 int整型 
+     * @return int整型
+     */
+    int lowestCommonAncestor(TreeNode* root, int o1, int o2) {
+        // write code here
+        return find(root, o1, o2)->val;
+    }
+    
+private:
+    TreeNode* find(TreeNode* root, const int p, const int q){
+        if(!root || root->val == p || root->val == q){
+            return root;
+        }
+        
+        TreeNode* leftNode = find(root->left, p, q);
+        TreeNode* rightNode = find(root->right, p, q);
+        
+        if(!leftNode){ return rightNode; }
+        if(!rightNode){ return leftNode; }
+        
+        return root;
+    }
+};
+```
+
+### BM39 序列化二叉树
+
+&emsp;&emsp;二叉树的序列化和反序列化过程就是将原有的二叉树按照一定的遍历顺序
+
+
+### BM40 重建二叉树
+
+给定前序遍历和中序遍历的结果，构建一棵二叉树。其要点是理解前序遍历顺序是根、左、右，而中序遍历是左、根、右。有了该种基本思想，其建立树的过程类似二分法，每次将一个区间内的树分为左右子树，直到不可再分，后合并即可。为标准递归思想应用。
+与该类别题目类型相同的还有，利用中序遍历结果和后续遍历结果构建二叉树，其基本思想与此类似。不同在于，后序遍历为左右根遍历方式。
+
+* 使用一个hashmap记录中序每个节点的所在中序中的位置，即生成dic[inodernode] = index
+* 找到前序遍历根节点在中序的位置，可知道左右子树的长度，然后依次递归构建二叉树即可。
+
+
+```c++
+/**
+ * Definition for binary tree
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    TreeNode* reConstructBinaryTree(vector<int> pre,vector<int> vin) {
+        int treeNodeLen = pre.size();
+        for(int i = 0; i< treeNodeLen;i++){
+            Vinindex[vin[i]] = i;
+        }
+        
+        return dfsReBTree(pre, vin, 0, treeNodeLen-1, 0,treeNodeLen-1);
+    }
+private:
+    unordered_map<int, int>Vinindex;
+    TreeNode* dfsReBTree(vector<int> pre, vector<int> vin,
+                         int subPreleft,  int subPreright,
+                         int subInleft,   int subInright)
+    {
+        if(subPreleft > subPreright) return nullptr;
+        int rootIndex = Vinindex[pre[subPreleft]]; // 找到根节点在中序中的位置
+        int subOfLeftlen = rootIndex - subInleft;  // 计算左子树的长度；
+        
+        TreeNode* root = new TreeNode(pre[subPreleft]); // 建树
+        root ->left = dfsReBTree(pre, vin, 
+                                 subPreleft + 1,  subPreleft + subOfLeftlen,
+                                 subInleft, rootIndex-1);
+        root->right = dfsReBTree(pre, vin, 
+                                 subPreleft + subOfLeftlen + 1, subPreright,
+                                 rootIndex + 1, subInright);
+        return root;
+        
+    }
+};
+```
+
+### BM41 输出二叉树的右视图
+
+&emsp;&emsp;当以给定前序遍历序列和中序遍历序列，要求输出二叉树的右视图时，一个比较自然的想法是，采用前序遍历和中序遍历序列，首先构建出二叉树，然后采用bfs进行层序遍历，可在分层遍历的过程中，获取右视图结果，其实现过程也比较轻松容易。
